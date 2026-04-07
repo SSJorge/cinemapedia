@@ -11,7 +11,10 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // return Scaffold(body: Center(child: Text(Environment.theMovieDbKey)));
-    return Scaffold(body: _HomeView());
+    return Scaffold(
+      body: _HomeView(),
+      bottomNavigationBar: CustomBottomNavigation(),
+    );
   }
 }
 
@@ -38,24 +41,78 @@ class _HomeViewState extends ConsumerState<_HomeView> {
 
     //aqui es watch pq tengo q estar pendiente del estado q me va a proporcionar mi nowplayingmoviesprovider
     final nowPlayingMovies = ref.watch(nowPlayingMoviesProvider);
+    final slideShowMovies = ref.watch(moviesSlideshowProvider);
 
-    if (nowPlayingMovies.isEmpty) {
+    if (slideShowMovies.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
-      children: [
-        CustomAppbar(),
+    // return SingleChildScrollView(
+    return CustomScrollView(
+      slivers: [
+        const SliverAppBar(
+          floating: true,
+          flexibleSpace: FlexibleSpaceBar(title: CustomAppbar()),
+        ),
 
-        Expanded(
-          //dado el padre expanda todo lo posible
-          child: ListView.builder(
-            itemCount: nowPlayingMovies.length,
-            itemBuilder: (context, index) {
-              final movie = nowPlayingMovies[index];
-              return ListTile(title: Text(movie.title));
-            },
-          ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            return Column(
+              children: [
+                CustomAppbar(),
+
+                // Expanded(
+                //   //dado el padre expanda todo lo posible
+                //   child: ListView.builder(
+                //     itemCount: nowPlayingMovies.length,
+                //     itemBuilder: (context, index) {
+                //       final movie = nowPlayingMovies[index];
+                //       return ListTile(title: Text(movie.title));
+                //     },
+                //   ),
+                // ),
+                MoviesSlideshow(movies: slideShowMovies),
+
+                MovieHorizontalListview(
+                  movies: nowPlayingMovies,
+                  title: 'En Cines',
+                  subTitle: 'Lunes 20',
+                  loadNextPage: () {
+                    //read no watch, read dentro de funciones o callback como este
+                    ref.read(nowPlayingMoviesProvider.notifier).loadNextPage();
+                  },
+                ),
+                MovieHorizontalListview(
+                  movies: nowPlayingMovies,
+                  title: 'Pronto en cines',
+                  subTitle: 'En este mes',
+                  loadNextPage: () {
+                    //read no watch, read dentro de funciones o callback como este
+                    ref.read(nowPlayingMoviesProvider.notifier).loadNextPage();
+                  },
+                ),
+                MovieHorizontalListview(
+                  movies: nowPlayingMovies,
+                  title: 'Propulares',
+                  // subTitle: '',
+                  loadNextPage: () {
+                    //read no watch, read dentro de funciones o callback como este
+                    ref.read(nowPlayingMoviesProvider.notifier).loadNextPage();
+                  },
+                ),
+                MovieHorizontalListview(
+                  movies: nowPlayingMovies,
+                  title: 'Mejor calificadas',
+                  subTitle: 'Desde siempre',
+                  loadNextPage: () {
+                    //read no watch, read dentro de funciones o callback como este
+                    ref.read(nowPlayingMoviesProvider.notifier).loadNextPage();
+                  },
+                ),
+                SizedBox(height: 10),
+              ],
+            );
+          }, childCount: 1),
         ),
       ],
     );
