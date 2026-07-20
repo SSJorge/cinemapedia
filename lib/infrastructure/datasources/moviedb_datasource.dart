@@ -1,3 +1,4 @@
+import 'package:cinemapedia/infrastructure/models/moviedb/movie_details.dart';
 import 'package:dio/dio.dart';
 
 import 'package:cinemapedia/config/constants/environment.dart';
@@ -27,7 +28,9 @@ class MoviedbDatasource extends MoviesDatasource {
 
     final List<Movie> movies = movieDbResponse.results
         .where(
-          (moviedb) => moviedb.posterPath != 'no-poster',
+          (moviedb) =>
+              moviedb.posterPath !=
+              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWykHx-KmnfCYBWxSrfZ3SntZD242DHX-x8A&s',
         ) //si es dif de no-poster lo dejo pasar
         .map((moviedb) => MovieMapper.movieDBToEntity(moviedb))
         .toList();
@@ -70,6 +73,29 @@ class MoviedbDatasource extends MoviesDatasource {
     final response = await dio.get(
       '/movie/top_rated',
       queryParameters: {'page': page},
+    );
+    // response.data;
+    return _jsonToMovies(response.data);
+  }
+
+  @override
+  Future<Movie> getMovieById(String id) async {
+    final response = await dio.get('/movie/$id');
+    if (response.statusCode != 200) {
+      throw Exception('Movie with id: $id not found');
+    }
+
+    final movieDetails = MovieDetails.fromJson(response.data);
+    final Movie movie = MovieMapper.movieDetailsToEntity(movieDetails);
+
+    return movie;
+  }
+
+  @override
+  Future<List<Movie>> searchMovies(String query) async {
+    final response = await dio.get(
+      '/search/movie',
+      queryParameters: {'query': query},
     );
     // response.data;
     return _jsonToMovies(response.data);
