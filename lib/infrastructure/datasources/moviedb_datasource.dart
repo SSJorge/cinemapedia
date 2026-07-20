@@ -26,15 +26,16 @@ class MoviedbDatasource extends MoviesDatasource {
     //     .map((moviedb) => MovieMapper.movieDBToEntity(moviedb))
     //     .toList();
 
-    final List<Movie> movies = movieDbResponse.results
-        .where(
-          (moviedb) =>
-              moviedb.posterPath !=
-              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWykHx-KmnfCYBWxSrfZ3SntZD242DHX-x8A&s',
-        ) //si es dif de no-poster lo dejo pasar
-        .map((moviedb) => MovieMapper.movieDBToEntity(moviedb))
-        .toList();
-    return movies;
+    // final List<Movie> movies = movieDbResponse.results
+    //     .where(
+    //       (moviedb) =>
+    //           moviedb.posterPath !=
+    //           'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWykHx-KmnfCYBWxSrfZ3SntZD242DHX-x8A&s',
+    //     ) //si es dif de no-poster lo dejo pasar
+    //     .map((moviedb) => MovieMapper.movieDBToEntity(moviedb))
+    //     .toList();
+    // return movies; COMENTADO CHATGPT Como ya tienes una imagen de reemplazo en el mapper, puedes eliminar por completo el filtro defectuoso:
+    return movieDbResponse.results.map(MovieMapper.movieDBToEntity).toList();
   }
 
   @override
