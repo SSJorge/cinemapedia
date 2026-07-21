@@ -14,7 +14,7 @@ class MovieMapper {
     originalTitle: moviedb.originalTitle,
     overview: moviedb.overview,
     popularity: moviedb.popularity,
-    posterPath: (moviedb.posterPath?.isEmpty ?? false)
+    posterPath: (moviedb.posterPath?.isNotEmpty ?? false)
         ? 'https://image.tmdb.org/t/p/w500${moviedb.posterPath}'
         : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWykHx-KmnfCYBWxSrfZ3SntZD242DHX-x8A&s',
     // releaseDate: DateTime.tryParse(moviedb.releaseDate) ?? DateTime(1900),
