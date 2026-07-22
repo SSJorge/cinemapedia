@@ -9,21 +9,24 @@ typedef SearchMoviesCallback = Future<List<Movie>> Function(String query);
 
 class SearchMovieDelegate extends SearchDelegate<Movie?> {
   final SearchMoviesCallback searchMovies;
-  final List<Movie> initialMovies;
+  List<Movie> initialMovies;
   StreamController<List<Movie>> debouncedMovies = StreamController.broadcast();
   // sin el broadcast solo va a poder tener un listener(alguna func q este escuchando el mismo) y pueden ser
   //varios lugares donde se este escuchando ese string, a pesar de q solo va a ser uno, pero cada vez q vaya al
   // onMovieSelected(context, movie) y se redibuje esto nuevamente va crear el streamcontroller,
   //o bueno, va a volverse a suscribir, entonces por eso tiene q ser un broadcast
   //si sè q solo hay un widget escuchandolo puede ser un streamcontroller normal, sino sè mejor poner broadcast
+  StreamController<bool> isLoadingStream = StreamController.broadcast();
   Timer?
   _debounceTimer; //opcional? porq no quiero definirlo hasta q ya lo esté utilizando
-  SearchMovieDelegate({
-    required this.searchMovies,
-    required this.initialMovies,
-  });
+  SearchMovieDelegate({required this.searchMovies, required this.initialMovies})
+    : super(
+        searchFieldLabel: 'Buscar peliculas',
+        // textInputAction: TextInputAction.done PONE DONE DONDE VA EL ENTER
+      );
 
   void _onQueryChanged(String query) {
+    isLoadingStream.add(true);
     if (_debounceTimer?.isActive ?? false) {
       _debounceTimer!.cancel();
     } //el timer cancelalo ya no sigas
@@ -42,7 +45,9 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
       }
 
       final movies = await searchMovies(query);
+      initialMovies = movies;
       debouncedMovies.add(movies);
+      isLoadingStream.add(false);
     });
   }
 
@@ -50,48 +55,10 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
     debouncedMovies.close();
   }
 
-  @override
-  String? get searchFieldLabel => 'Buscar película';
+  // @override
+  // String? get searchFieldLabel => 'Buscar película';
 
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      FadeIn(
-        animate: query.isNotEmpty,
-        duration: const Duration(milliseconds: 200),
-        child: IconButton(
-          onPressed: () {
-            query = '';
-          },
-          icon: const Icon(Icons.clear),
-        ),
-      ),
-    ];
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      onPressed: () {
-        clearStreams();
-        close(context, null);
-      },
-      icon: const Icon(Icons.arrow_back),
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    return const Center(child: Text('BuildResults'));
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    _onQueryChanged(query);
-    if (query.trim().isEmpty) {
-      return const Center(child: Text('Escribe el nombre de una película'));
-    }
-
+  Widget _buildResultsAndSuggestions() {
     return StreamBuilder(
       initialData: initialMovies,
       stream: debouncedMovies.stream,
@@ -137,6 +104,67 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
         );
       },
     );
+  }
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      StreamBuilder(
+        initialData: false,
+        stream: isLoadingStream.stream,
+        builder: (context, snapshot) {
+          if (snapshot.data ?? false) {
+            return SpinPerfect(
+              duration: const Duration(seconds: 20),
+              spins: 10,
+              infinite: true,
+              child: IconButton(
+                onPressed: () {
+                  query = '';
+                },
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+            );
+          }
+          return FadeIn(
+            animate: query.isNotEmpty,
+            duration: const Duration(milliseconds: 200),
+            child: IconButton(
+              onPressed: () {
+                query = '';
+              },
+              icon: const Icon(Icons.clear),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        clearStreams();
+        close(context, null);
+      },
+      icon: const Icon(Icons.arrow_back),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildResultsAndSuggestions();
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    _onQueryChanged(query);
+    if (query.trim().isEmpty) {
+      //esto no lo tiene fertnando
+      return const Center(child: Text('Escribe el nombre de una película'));
+    }
+    return _buildResultsAndSuggestions();
   }
 }
 
