@@ -1,3 +1,4 @@
+import 'package:cinemapedia/presentation/providers/search/search_movies_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,11 +32,24 @@ class CustomAppbar extends ConsumerWidget {
 
               IconButton(
                 onPressed: () {
-                  final movieRepository = ref.read(movieRepositoryProvider);
+                  final searchedMovies = ref.read(searchedMoviesProvider);
+                  final searchQuery = ref.read(searchQueryProvider);
                   showSearch<Movie?>(
+                    //puedo poner query: 'antman' y estara predefinido
+                    query: searchQuery,
                     context: context,
                     delegate: SearchMovieDelegate(
-                      searchMovies: movieRepository.searchMovies,
+                      initialMovies: searchedMovies,
+                      // searchMovies: movieRepository.searchMovies,
+                      // searchMovies: (query) {
+                      //   ref
+                      //       .read(searchQueryProvider.notifier)
+                      //       .update((state) => query);
+                      //   return movieRepository.searchMovies(query);
+                      // },
+                      searchMovies: ref
+                          .read(searchedMoviesProvider.notifier)
+                          .searchMoviesByQuery,
                     ),
                   ).then((movie) {
                     if (movie == null) return;

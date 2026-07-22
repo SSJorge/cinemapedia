@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:animate_do/animate_do.dart';
 import 'package:cinemapedia/config/helpers/human_formats.dart';
 import 'package:cinemapedia/domain/entities/movie.dart';
@@ -7,8 +9,38 @@ typedef SearchMoviesCallback = Future<List<Movie>> Function(String query);
 
 class SearchMovieDelegate extends SearchDelegate<Movie?> {
   final SearchMoviesCallback searchMovies;
+  final List<Movie> initialMovies;
+  StreamController<List<Movie>> debouncedMovies = StreamController.broadcast();
+  // sin el broadcast solo va a poder tener un listener(alguna func q este escuchando el mismo) y pueden ser
+  //varios lugares donde se este escuchando ese string, a pesar de q solo va a ser uno, pero cada vez q vaya al
+  // onMovieSelected(context, movie) y se redibuje esto nuevamente va crear el streamcontroller,
+  //o bueno, va a volverse a suscribir, entonces por eso tiene q ser un broadcast
+  //si sè q solo hay un widget escuchandolo puede ser un streamcontroller normal, sino sè mejor poner broadcast
+  Timer?
+  _debounceTimer; //opcional? porq no quiero definirlo hasta q ya lo esté utilizando
+  SearchMovieDelegate({
+    required this.searchMovies,
+    required this.initialMovies,
+  });
 
-  SearchMovieDelegate({required this.searchMovies});
+  void _onQueryChanged(String query) {
+    if (_debounceTimer?.isActive ?? false) {
+      _debounceTimer!.cancel();
+    } //el timer cancelalo ya no sigas
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      if (query.isEmpty) {
+        debouncedMovies.add([]);
+        return; //no quiero hacer una busqueda http si el query está vacio
+      }
+
+      final movies = await searchMovies(query);
+      debouncedMovies.add(movies);
+    });
+  }
+
+  void clearStreams() {
+    debouncedMovies.close();
+  }
 
   @override
   String? get searchFieldLabel => 'Buscar película';
@@ -33,6 +65,7 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
   Widget? buildLeading(BuildContext context) {
     return IconButton(
       onPressed: () {
+        clearStreams();
         close(context, null);
       },
       icon: const Icon(Icons.arrow_back),
@@ -49,9 +82,11 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
     if (query.trim().isEmpty) {
       return const Center(child: Text('Escribe el nombre de una película'));
     }
+    _onQueryChanged(query);
 
-    return FutureBuilder<List<Movie>>(
-      future: searchMovies(query.trim()),
+    return StreamBuilder(
+      initialData: initialMovies,
+      stream: debouncedMovies.stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -85,7 +120,8 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
             return _MovieItem(
               movie: movies[index],
               onMovieSelected: (context, movie) {
-                //basta con onmmovieselect: close
+                clearStreams();
+                //basta con onmmovieselect: close (al comienzo, antes del clearstream)
                 close(context, movie);
               },
             );

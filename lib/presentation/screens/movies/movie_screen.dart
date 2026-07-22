@@ -209,7 +209,7 @@ class _CustomSliverAppBar extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: [0.0, 0.7, 1.0],
+                    stops: [0.7, 1.0],
                     colors: [Colors.transparent, Colors.black87],
                   ),
                 ),
