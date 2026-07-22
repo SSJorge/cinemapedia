@@ -27,6 +27,14 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
     if (_debounceTimer?.isActive ?? false) {
       _debounceTimer!.cancel();
     } //el timer cancelalo ya no sigas
+
+    // El texto vacío debe guardarse inmediatamente
+    if (query.trim().isEmpty) {
+      searchMovies('');
+      debouncedMovies.add([]);
+      return;
+    }
+
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       if (query.isEmpty) {
         debouncedMovies.add([]);
@@ -79,10 +87,10 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    _onQueryChanged(query);
     if (query.trim().isEmpty) {
       return const Center(child: Text('Escribe el nombre de una película'));
     }
-    _onQueryChanged(query);
 
     return StreamBuilder(
       initialData: initialMovies,
